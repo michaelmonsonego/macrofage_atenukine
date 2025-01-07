@@ -30,8 +30,8 @@ macrofages <- readRDS("objects/macrofage_zoom_.35.rds")
 macrophage_memory <- readRDS("objects/macrophage_memory_.35.rds")
 
 macrofages$Batch <- "one_shot"
-
 macrophage_memory$Batch <- "memory"
+colnames(macrofages@meta.data) #M# verification
 
 
 combined <- merge(x = macrofages, 
@@ -69,7 +69,6 @@ combined <- FindClusters(combined, resolution = 0.35)
 # saveRDS(combined, file = "objects/combined_macrophage_.35.rds") #M# change if adjusted
 combined <- readRDS("objects/combined_macrophage_.35.rds")
 
-
 combined.markers = FindAllMarkers(combined, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, assay = "RNA")
 Top50Markers =
   combined.markers %>%
@@ -79,18 +78,119 @@ Top50Markers =
   arrange(cluster,-avg_log2FC)
 write_csv(Top50Markers, "Excels/combined_macrofage_zoom_DE genes.csv")
 
+#M# infiltration signiture---------------
+infiltration_list = list(c("Ccr2", "Cx3cr1", "Ccr5", "Ccr7", "Itgb2", "Itgam", "Mmp9", "Mmp12", "Spp1", "Cd11c"))
+combined = AddModuleScore(object = combined, features = infiltration_list, name = "infiltration", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "infiltration1",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#e46467", "#b33336", "#A73033"), order = TRUE)+labs(title = "infiltration", subtitle = "()")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/infiltration.png", dpi=300, width=5, height=5)
+
+
+#M# proliferation signiture---------------
+proliferation_list = list(c("Mki67", "Pcna", "Ccna2", "Ccnb1", "Ccnb2", "Ccne1", "Cdk1", "Aurka", "Aurkb", "Top2a", "Hist1h1", "Hist1h2", "Hist1h3"))
+combined = AddModuleScore(object = combined, features = proliferation_list, name = "proliferation", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "proliferation1",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#e46467", "#b33336", "#A73033"), order = TRUE)+labs(title = "proliferation", subtitle = "()")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/proliferation.png", dpi=300, width=5, height=5)
+
+
+#M# M1 M2 tsne------------
+M2_list = list(c("Il10", "Tgfb1", "Ccl17","Ccl22", "Cd163", "Mrc1", "Clec10a", "Arg1", "Stat3", "Pparg","C1qb", "C1qa","Cd72","Aif1","Trem2","C3ar1","F13a1","Gpnmb"))
+combined = AddModuleScore(object = combined, features = M2_list, name = "M2", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "M21",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M2")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/M2_michael_ayelet.png", dpi=300, width=7.5, height=7)
+M1_list = list(c("Tnf","Il1b", "Il6", "Cxcl9", "Cxcl10", "Cd86", "Cd80", "Hla-dra","Nos2", "Ido1", "Stat1", "Irf5","Ifit2","Gbp5","Msrb1","Il18","Hilpda"))
+combined = AddModuleScore(object = combined, features = M1_list, name = "M1", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "M11",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M1")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/M1_michael_ayelet.png", dpi=300, width=7.5, height=7)
 
 
 
+#M# batch based tsne ---------------
+DimPlot(combined, reduction = "tsne", group.by = "Batch", label = TRUE)
+ggsave(file = "figures/combined/tsne_combined_by_groups.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
+DimPlot(combined, reduction = "tsne", repel = T, label = TRUE, label.size = 5)
+ggsave(file = "figures/combined/tsne_combined_by_clusters.png", dpi=300, width=6, height=6, limitsize=FALSE)
 
 
 
+#M# vln between groups -------------
+VlnPlot(combined, features = c("infiltration1"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Sample",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#A4DEF9","#5C7D9D", "#CFBAE1", "#BEE3DB", "#A8DCC1", "#93C9AA")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)
+ggsave(file = "figures/combined/infiltration_signature.png", dpi=300, width=6, height=6, limitsize=FALSE)
 
 
+VlnPlot(combined, features = c("proliferation1"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Sample",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#A4DEF9","#5C7D9D", "#CFBAE1", "#C4E7DA", "#8ADBAE", "#5CCBA3")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)
+ggsave(file = "figures/combined/proliferation_signature.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
+VlnPlot(combined, features = c("M11"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Sample",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#A4DEF9","#5C7D9D", "#CFBAE1", "#C4E7DA", "#8ADBAE", "#5CCBA3")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)
+ggsave(file = "figures/combined/M1_signature.png", dpi=300, width=6, height=6, limitsize=FALSE)
 
 
-
-
+VlnPlot(combined, features = c("M21"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Sample",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#A4DEF9","#5C7D9D", "#CFBAE1", "#C4E7DA", "#8ADBAE", "#5CCBA3")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)
+ggsave(file = "figures/combined/M2_signature.png", dpi=300, width=6, height=6, limitsize=FALSE)
 
 
 

@@ -188,10 +188,24 @@ g
 
 
 
-
-
-
-
+#M# vln between groups -------------
+VlnPlot(macrofages, features = c("infiltration1"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Sample",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#A4DEF9","#5C7D9D", "#CFBAE1")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)
+ggsave(file = "figures/macrofage_zoom/infiltration_signature.png", dpi=300, width=6, height=10, limitsize=FALSE)
 
 
 
