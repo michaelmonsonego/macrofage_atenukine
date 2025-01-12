@@ -139,6 +139,24 @@ g <- FeaturePlot(object = macrophage_memory, features = "M21",pt.size=0.75, redu
 g
 ggsave(file = "figures/macrophage_memory/macrophage_memory_M2.png", dpi=300, width=5, height=5)
 
+VlnPlot(macrophage_memory, features = c("M21"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Treatment",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#CFBAE1", "#5C7D9D", "#A4DEF9")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE) +labs(title = "M2")
+ggsave(file = "figures/macrophage_memory/M2_signature_vln_intermidiate.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
 M1_list = list(c("Tnf","Il1b", "Il6", "Cxcl9", "Cxcl10", "Cd86", "Cd80", "Hla-dra","Nos2", "Ido1", "Stat1", "Irf5","Ifit2","Gbp5","Msrb1","Il18","Hilpda"))
 macrophage_memory = AddModuleScore(object = macrophage_memory, features = M1_list, name = "M1", assay = "RNA")
 g <- FeaturePlot(object = macrophage_memory, features = "M11",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M1")+ theme(plot.subtitle = element_text(hjust =0.5))
@@ -146,10 +164,71 @@ g
 ggsave(file = "figures/macrophage_memory/macrophage_memory_M1.png", dpi=300, width=5, height=5)
 
 
+VlnPlot(macrophage_memory, features = c("M11"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Treatment",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#CFBAE1", "#5C7D9D", "#A4DEF9")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)+labs(title = "M1")
+ggsave(file = "figures/macrophage_memory/M1_signature_intermidiate.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
+
 unique(macrofages$Annotation)
 unique(macrofages$Sample)
 unique(macrophage_memory$Treatment)
 unique(macrophage_memory@active.ident)
+
+
+#M# boxplot for M1/M2 ------------
+
+df <- macrophage_memory@meta.data %>%
+  as.data.frame()
+
+df <- df %>%
+  mutate(M1_M2_ratio = M11 / M21)
+
+df <- df %>%
+  filter(!is.na(M1_M2_ratio) & M1_M2_ratio != Inf & M1_M2_ratio != 0)
+
+df <- df %>%
+  mutate(M1_M2_logRatio = log2(M1_M2_ratio))
+
+
+
+ggplot(df, aes(x = Treatment, y = M1_M2_logRatio, fill = Treatment)) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +
+  theme_classic() +
+  labs(
+    title = "M1/M2 Ratio (log10) by Treatment",
+    x = NULL,
+    y = "log10(M1/M2 Ratio)"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 14, face = "bold"),
+    axis.title.y = element_text(size = 14, face = "bold")
+  ) +
+  scale_fill_manual(values= c("#CFBAE1", "#5C7D9D", "#A4DEF9")) +
+  coord_cartesian(ylim = c(-3, 3))
+ggsave(file = "figures/macrophage_memory/M1_M2_signature_ratio_intermidiate.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
+2
+
+
+
+
+
+
+
 
 
 

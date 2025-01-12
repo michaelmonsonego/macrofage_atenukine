@@ -83,7 +83,7 @@ ggsave(all_tSNE,filename = 'figures/macrofage_zoom/macrofage_zoom_0_14_dim_res_t
 
 macrofages <- FindClusters(macrofages, resolution = 0.35)
 # saveRDS(macrofages, file = "objects/macrofage_zoom_.35.rds") #M# change if adjusted
-macrofages <- readRDS("objects/macrofage_zoom_.35.rds")
+# macrofages <- readRDS("objects/macrofage_zoom_.35.rds")
 
 macrofages.markers = FindAllMarkers(macrofages, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, assay = "RNA")
 Top50Markers =
@@ -149,6 +149,24 @@ g <- FeaturePlot(object = macrofages, features = "infiltration1",pt.size=0.75, r
 g
 ggsave(file = "figures/macrofage_zoom/infiltration.png", dpi=300, width=5, height=5)
 
+VlnPlot(macrofages, features = c("infiltration1"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Sample",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#CFBAE1", "#5C7D9D", "#A4DEF9")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE) +labs(title = "infiltration")
+ggsave(file = "figures/macrofage_zoom/infiltration_signature_vln.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
 
 #M# proliferation signiture
 proliferation_list = list(c("Mki67", "Pcna", "Ccna2", "Ccnb1", "Ccnb2", "Ccne1", "Cdk1", "Aurka", "Aurkb", "Top2a", "Hist1h1", "Hist1h2", "Hist1h3"))
@@ -157,8 +175,83 @@ g <- FeaturePlot(object = macrofages, features = "proliferation1",pt.size=0.75, 
 g
 ggsave(file = "figures/macrofage_zoom/proliferation.png", dpi=300, width=5, height=5)
 
+VlnPlot(macrofages, features = c("proliferation1"),
+        assay = "RNA",
+        flip= TRUE,
+        group.by = "Sample",
+        pt.size = 0
+)+ 
+  theme_classic() + scale_fill_manual(values= c("#CFBAE1", "#5C7D9D", "#A4DEF9")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)+labs(title = "proliferation")
+ggsave(file = "figures/macrofage_zoom/proliferation_signature_vln.png", dpi=300, width=6, height=6, limitsize=FALSE)
 
-#M# tsne
+
+# significance vln plot attempt -----------------
+library(ggplot2)
+library(ggsignif)
+
+groups <- unique(macrofages$Sample)  
+p_values <- list()
+
+for (i in 1:(length(groups) - 1)) {
+  for (j in (i + 1):length(groups)) {
+    group1 <- groups[i]
+    group2 <- groups[j]
+    
+    test_result <- wilcox.test(
+      macrofages$proliferation1[macrofages$Sample == group1],
+      macrofages$proliferation1[macrofages$Sample == group2]
+    )
+    
+    p_values[[paste(group1, group2, sep = "_vs_")]] <- test_result$p.value
+  }
+}
+
+p_values_df <- data.frame(
+  group1 = c("group1", "group2", "group3"),  
+  group2 = c("group2", "group3", "group1"),  
+  p_value = c(0.05, 0.01, 0.001)  
+)
+
+vln_plot <- VlnPlot(macrofages, features = c("proliferation1"),
+                    assay = "RNA",
+                    flip = TRUE,
+                    group.by = "Sample",
+                    pt.size = 0) + 
+  theme_classic() +
+  scale_fill_manual(values = c("#A4DEF9", "#5C7D9D", "#CFBAE1")) +
+  theme(
+    axis.text.x = element_text(angle = 50, hjust = 1, size = 16, face = "bold"),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(size = 24, face = "italic"),
+    axis.title.y = element_text(size = 20, face = "bold"),
+    axis.ticks.y = element_line(size = 0.5),
+    strip.text.y = element_text(angle = 0, size = 16, face = "bold")
+  ) +
+  geom_boxplot(alpha = 0.3, show.legend = FALSE)
+
+vln_plot + 
+  geom_signif(
+    comparisons = list(c("group1", "group2"), c("group1", "group3"), c("group2", "group3")),  # Replace with actual group names
+    map_signif_level = TRUE,
+    annotations = c("*", "**", "***", "****"),  
+    y_position = c(7, 8),  # Set the y-position of the brackets
+    tip_length = 0.03
+  ) 
+ggsave(file = "figures/macrofage_zoom/proliferation_signature_vln_with_significance.png", dpi = 300, width = 6, height = 6, limitsize = FALSE)
+
+
+
+
+#M# signature tsne ------------ 
 M2_list = list(c("Il10", "Tgfb1", "Ccl17","Ccl22", "Cd163", "Mrc1", "Clec10a", "Arg1", "Stat3", "Pparg","C1qb", "C1qa","Cd72","Aif1","Trem2","C3ar1","F13a1","Gpnmb"))
 macrofages = AddModuleScore(object = macrofages, features = M2_list, name = "M2", assay = "RNA")
 g <- FeaturePlot(object = macrofages, features = "M21",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M2")+ theme(plot.subtitle = element_text(hjust =0.5))

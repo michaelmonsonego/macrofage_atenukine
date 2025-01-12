@@ -29,14 +29,14 @@ x1=4.6
 macrofages <- readRDS("objects/macrofage_zoom_.35.rds")
 macrophage_memory <- readRDS("objects/macrophage_memory_.35.rds")
 
-macrofages$Batch <- "one_shot"
-macrophage_memory$Batch <- "memory"
+macrofages$Batch <- "early"
+macrophage_memory$Batch <- "intermediate"
 colnames(macrofages@meta.data) #M# verification
 
 
 combined <- merge(x = macrofages, 
                     y = macrophage_memory,
-                    add.cell.ids = c("one_shot","memory"))  
+                    add.cell.ids = c("early","intermediate"))  
 
 combined = NormalizeData(combined, assay = "RNA",normalization.method = "LogNormalize", scale.factor = 10000) 
 combined = FindVariableFeatures(combined, assay = "RNA", selection.method = "vst", nfeatures = 2000) 
@@ -67,7 +67,7 @@ ggsave(all_tSNE,filename = 'figures/combined/combined_0_14_dim_res_test.png', dp
 
 combined <- FindClusters(combined, resolution = 0.35)
 # saveRDS(combined, file = "objects/combined_macrophage_.35.rds") #M# change if adjusted
-combined <- readRDS("objects/combined_macrophage_.35.rds")
+# combined <- readRDS("objects/combined_macrophage_.35.rds")
 
 combined.markers = FindAllMarkers(combined, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25, assay = "RNA")
 Top50Markers =
@@ -99,12 +99,27 @@ M2_list = list(c("Il10", "Tgfb1", "Ccl17","Ccl22", "Cd163", "Mrc1", "Clec10a", "
 combined = AddModuleScore(object = combined, features = M2_list, name = "M2", assay = "RNA")
 g <- FeaturePlot(object = combined, features = "M21",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M2")+ theme(plot.subtitle = element_text(hjust =0.5))
 g
-ggsave(file = "figures/combined/M2_michael_ayelet.png", dpi=300, width=7.5, height=7)
+ggsave(file = "figures/combined/M2_michael_ayelet.png", dpi=300, width=5, height=5)
 M1_list = list(c("Tnf","Il1b", "Il6", "Cxcl9", "Cxcl10", "Cd86", "Cd80", "Hla-dra","Nos2", "Ido1", "Stat1", "Irf5","Ifit2","Gbp5","Msrb1","Il18","Hilpda"))
 combined = AddModuleScore(object = combined, features = M1_list, name = "M1", assay = "RNA")
-g <- FeaturePlot(object = combined, features = "M11",pt.size=0.75, reduction = "tsne", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M1")+ theme(plot.subtitle = element_text(hjust =0.5))
+g <- FeaturePlot(object = combined, features = "M11",pt.size=0.75, reduction = "umap", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M1")+ theme(plot.subtitle = element_text(hjust =0.5))
 g
-ggsave(file = "figures/combined/M1_michael_ayelet.png", dpi=300, width=7.5, height=7)
+ggsave(file = "figures/combined/M1_michael_ayelet.png", dpi=300, width=5, height=5)
+
+
+#M# infiltration &  proliferation signiture umap ---------------
+infiltration_list = list(c("Ccr2", "Cx3cr1", "Ccr5", "Ccr7", "Itgb2", "Itgam", "Mmp9", "Mmp12", "Spp1", "Cd11c"))
+combined = AddModuleScore(object = combined, features = infiltration_list, name = "infiltration", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "infiltration1",pt.size=0.75, reduction = "umap", cols=c("grey","grey","#e46467", "#b33336", "#A73033"), order = TRUE)+labs(title = "infiltration")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/infiltration_umap.png", dpi=300, width=5, height=5)
+
+proliferation_list = list(c("Mki67", "Pcna", "Ccna2", "Ccnb1", "Ccnb2", "Ccne1", "Cdk1", "Aurka", "Aurkb", "Top2a", "Hist1h1", "Hist1h2", "Hist1h3"))
+combined = AddModuleScore(object = combined, features = proliferation_list, name = "proliferation", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "proliferation1",pt.size=0.75, reduction = "umap", cols=c("grey","grey","#e46467", "#b33336", "#A73033"), order = TRUE)+labs(title = "proliferation")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/proliferation_umap.png", dpi=300, width=5, height=5)
+
 
 
 
@@ -114,6 +129,40 @@ ggsave(file = "figures/combined/tsne_combined_by_groups.png", dpi=300, width=6, 
 
 DimPlot(combined, reduction = "tsne", repel = T, label = TRUE, label.size = 5)
 ggsave(file = "figures/combined/tsne_combined_by_clusters.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
+
+#M# umap ------------
+
+combined = RunUMAP(combined, dims = 1:14)
+DimPlot(combined, reduction = "umap", label = TRUE, pt.size = 0.5, label.size = 10) +
+  ggplot2::theme(legend.position = "none") +
+  ggplot2::theme(
+    axis.title.x = element_text(size = 30),  # X-axis title size
+    axis.title.y = element_text(size = 30),  # Y-axis title size
+    axis.text.x = element_text(size = 24),   # X-axis tick labels size
+    axis.text.y = element_text(size = 24),   # Y-axis tick labels size
+    axis.ticks = element_line(size = 1)      # Adjust axis tick size
+  )
+ggsave(file = "figures/combined/umap_no_annotation_dims_14.png", dpi=300, width=10, height=10)
+
+DimPlot(combined, reduction = "umap", group.by = "Batch", label = TRUE)
+ggsave(file = "figures/combined/umap_combined_by_clusters.png", dpi=300, width=6, height=6, limitsize=FALSE)
+
+
+
+#M# M1 M2 umap------------
+M2_list = list(c("Il10", "Tgfb1", "Ccl17","Ccl22", "Cd163", "Mrc1", "Clec10a", "Arg1", "Stat3", "Pparg","C1qb", "C1qa","Cd72","Aif1","Trem2","C3ar1","F13a1","Gpnmb"))
+combined = AddModuleScore(object = combined, features = M2_list, name = "M2", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "M21",pt.size=0.75, reduction = "umap", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M2")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/umap_M2_sig.png", dpi=300, width=5, height=5)
+
+M1_list = list(c("Tnf","Il1b", "Il6", "Cxcl9", "Cxcl10", "Cd86", "Cd80", "Hla-dra","Nos2", "Ido1", "Stat1", "Irf5","Ifit2","Gbp5","Msrb1","Il18","Hilpda"))
+combined = AddModuleScore(object = combined, features = M1_list, name = "M1", assay = "RNA")
+g <- FeaturePlot(object = combined, features = "M11",pt.size=0.75, reduction = "umap", cols=c("grey","grey","#E46467", "#B33336", "#A73033"), order = TRUE)+labs(title = "M1")+ theme(plot.subtitle = element_text(hjust =0.5))
+g
+ggsave(file = "figures/combined/umap_M1_sig.png", dpi=300, width=5, height=5)
+
 
 
 
